@@ -414,6 +414,48 @@ export default function Home() {
                           </div>
                         )}
 
+                        {/* Personel Özet Tablosu */}
+                        <div className="border border-[#757575] rounded-md overflow-hidden mt-8">
+                          <div className="bg-[#212121] text-white text-center py-2 font-bold text-sm">
+                            PERSONEL VARDİYA ÖZETİ
+                          </div>
+                          <div className="overflow-x-auto">
+                            <table className="w-full border-collapse bg-white text-sm">
+                              <thead>
+                                <tr className="bg-[#F4F4F4]">
+                                  <th className="border border-[#757575] p-2 text-left text-[#E04545] font-bold">Personel</th>
+                                  <th className="border border-[#757575] p-2 text-center text-[#E04545] font-bold">Gündüz</th>
+                                  <th className="border border-[#757575] p-2 text-center text-[#E04545] font-bold">Akşam</th>
+                                  <th className="border border-[#757575] p-2 text-center text-[#E04545] font-bold">Gece</th>
+                                  <th className="border border-[#757575] p-2 text-center text-[#E04545] font-bold">Cumartesi</th>
+                                  <th className="border border-[#757575] p-2 text-center text-[#E04545] font-bold">Pazar</th>
+                                  <th className="border border-[#757575] p-2 text-center text-[#E04545] font-bold">Toplam</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {employees.map(emp => {
+                                  const s = scheduleData.stats[emp.id];
+                                  if(!s) return null;
+                                  return (
+                                    <tr key={emp.id} className="hover:bg-slate-50">
+                                      <td className="border border-[#757575] p-2 font-medium">
+                                        {emp.name}
+                                        {emp.onlySunday && <span className="ml-2 text-[10px] bg-slate-100 px-2 py-0.5 rounded text-slate-500">Sadece Pazar</span>}
+                                      </td>
+                                      <td className="border border-[#757575] p-2 text-center">{s.morning}</td>
+                                      <td className="border border-[#757575] p-2 text-center">{s.evening}</td>
+                                      <td className="border border-[#757575] p-2 text-center">{s.night}</td>
+                                      <td className="border border-[#757575] p-2 text-center font-medium text-orange-600">{s.saturdayOvertime}</td>
+                                      <td className="border border-[#757575] p-2 text-center font-medium text-orange-600">{s.sundayOvertime}</td>
+                                      <td className="border border-[#757575] p-2 text-center font-bold">{s.total}</td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+
                       </div>
                     </TabsContent>
 
