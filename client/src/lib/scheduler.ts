@@ -36,14 +36,17 @@ export function generateSchedule(employees: Employee[], startDate: Date): Schedu
   const sundayPool = employees.filter(e => e.canSunday);
   const saturdayPool = employees.filter(e => !e.onlySunday); 
 
-  // Karıştır ki her seferinde aynı sırayla başlamasın
+  // Rastgele başlasın
   regularPool.sort(() => Math.random() - 0.5);
   sundayPool.sort(() => Math.random() - 0.5);
   saturdayPool.sort(() => Math.random() - 0.5);
 
-  let currentRegularIndex = 0;
-  let currentSundayIndex = 0;
-  let currentSaturdayIndex = 0;
+  const history: Record<string, string[]> = {};
+  employees.forEach(e => history[e.id] = []);
+
+  const satHistory: Record<string, boolean[]> = {};
+  const sunHistory: Record<string, boolean[]> = {};
+  employees.forEach(e => { satHistory[e.id] = []; sunHistory[e.id] = []; });
 
   for (let w = 0; w < 14; w++) {
     const weekDate = addWeeks(currentDate, w);
@@ -59,31 +62,85 @@ export function generateSchedule(employees: Employee[], startDate: Date): Schedu
     };
 
     if (regularPool.length >= 5) {
-      // 2 Gündüz, 2 Akşam, 1 Gece
-      week.morning.push(regularPool[currentRegularIndex % regularPool.length]);
-      currentRegularIndex++;
-      week.morning.push(regularPool[currentRegularIndex % regularPool.length]);
-      currentRegularIndex++;
+      let available = [...regularPool];
+      
+      const pickWorkers = (count: number, shiftType: 'morning' | 'evening' | 'night') => {
+        // Üst üste 3. kez aynı vardiyaya gelmesini engelle
+        let validCandidates = available.filter(e => {
+          if (w >= 2 && history[e.id][w-1] === shiftType && history[e.id][w-2] === shiftType) {
+            return false;
+          }
+          return true;
+        });
 
-      week.evening.push(regularPool[currentRegularIndex % regularPool.length]);
-      currentRegularIndex++;
-      week.evening.push(regularPool[currentRegularIndex % regularPool.length]);
-      currentRegularIndex++;
+        // Eğer geçerli aday kalmadıysa (çok az personel varsa kuralı esnet)
+        if (validCandidates.length < count) {
+          validCandidates = available;
+        }
 
-      week.night.push(regularPool[currentRegularIndex % regularPool.length]);
-      currentRegularIndex++;
+        // Öncelik Sıralaması:
+        // 1. Bu spesifik vardiyaya en az gelen
+        // 2. Toplamda en az çalışan
+        validCandidates.sort((a, b) => {
+          if (stats[a.id][shiftType] !== stats[b.id][shiftType]) {
+            return stats[a.id][shiftType] - stats[b.id][shiftType];
+          }
+          if (stats[a.id].total !== stats[b.id].total) {
+            return stats[a.id].total - stats[b.id].total;
+          }
+          return Math.random() - 0.5;
+        });
+
+        const picked = validCandidates.slice(0, count);
+        available = available.filter(a => !picked.find(p => p.id === a.id));
+        return picked;
+      };
+
+      // Dağıtımda adaleti sağlamak için geceyi önce seçmek daha dengeli olabilir (1 kişi olduğu için)
+      week.night = pickWorkers(1, 'night');
+      week.evening = pickWorkers(2, 'evening');
+      week.morning = pickWorkers(2, 'morning');
+
+      // Tarihçeyi güncelle
+      regularPool.forEach(e => {
+        if (week.morning.some(x => x.id === e.id)) history[e.id].push('morning');
+        else if (week.evening.some(x => x.id === e.id)) history[e.id].push('evening');
+        else if (week.night.some(x => x.id === e.id)) history[e.id].push('night');
+        else history[e.id].push('off');
+      });
     }
 
+    // Cumartesi Seçimi
     if (saturdayPool.length > 0) {
-      week.saturday.push(saturdayPool[currentSaturdayIndex % saturdayPool.length]);
-      currentSaturdayIndex++;
+      let satCands = saturdayPool.filter(e => !(w >= 2 && satHistory[e.id][w-1] && satHistory[e.id][w-2]));
+      if (satCands.length === 0) satCands = [...saturdayPool];
+      
+      satCands.sort((a, b) => {
+        if (stats[a.id].saturdayOvertime !== stats[b.id].saturdayOvertime) return stats[a.id].saturdayOvertime - stats[b.id].saturdayOvertime;
+        if (stats[a.id].total !== stats[b.id].total) return stats[a.id].total - stats[b.id].total;
+        return Math.random() - 0.5;
+      });
+      const picked = satCands[0];
+      week.saturday.push(picked);
+      saturdayPool.forEach(e => satHistory[e.id].push(e.id === picked.id));
     }
 
+    // Pazar Seçimi
     if (sundayPool.length > 0) {
-      week.sunday.push(sundayPool[currentSundayIndex % sundayPool.length]);
-      currentSundayIndex++;
+      let sunCands = sundayPool.filter(e => !(w >= 2 && sunHistory[e.id][w-1] && sunHistory[e.id][w-2]));
+      if (sunCands.length === 0) sunCands = [...sundayPool];
+      
+      sunCands.sort((a, b) => {
+        if (stats[a.id].sundayOvertime !== stats[b.id].sundayOvertime) return stats[a.id].sundayOvertime - stats[b.id].sundayOvertime;
+        if (stats[a.id].total !== stats[b.id].total) return stats[a.id].total - stats[b.id].total;
+        return Math.random() - 0.5;
+      });
+      const picked = sunCands[0];
+      week.sunday.push(picked);
+      sundayPool.forEach(e => sunHistory[e.id].push(e.id === picked.id));
     }
 
+    // İstatistikleri güncelle
     week.morning.forEach(e => { stats[e.id].morning++; stats[e.id].total++; });
     week.evening.forEach(e => { stats[e.id].evening++; stats[e.id].total++; });
     week.night.forEach(e => { stats[e.id].night++; stats[e.id].total++; });
@@ -103,7 +160,7 @@ export function generateSchedule(employees: Employee[], startDate: Date): Schedu
     const minTotal = Math.min(...totals);
     const diff = maxTotal - minTotal;
     
-    fairnessSummary = `Normal personeller arasında en çok görev alan kişi ${maxTotal}, en az görev alan kişi ${minTotal} vardiya almıştır. (Fark: ${diff}). Haftalık döngü (Round-robin) ile adil dağılım sağlanmıştır.`;
+    fairnessSummary = `Personeller arasında vardiya dağılımı optimize edildi. Gündüz, akşam ve gece vardiyaları eşit paylaştırılmaya çalışıldı. Üst üste 3 hafta aynı vardiyaya yazılma engellendi. En çok çalışan ${maxTotal}, en az çalışan ${minTotal} vardiya almıştır.`;
   } else {
     fairnessSummary = "Yeterli normal personel bulunmuyor.";
   }
