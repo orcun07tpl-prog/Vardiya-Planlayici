@@ -29,10 +29,6 @@ export default function Home() {
     const saved = localStorage.getItem("shift_schedule");
     if (saved) {
       const parsed = JSON.parse(saved);
-      // Date objelerini geri çevir
-      parsed.weeks.forEach((w: any) => w.forEach((d: any) => {
-        d.date = new Date(d.date);
-      }));
       return parsed;
     }
     return null;
@@ -223,46 +219,201 @@ export default function Home() {
                     </div>
 
                     <TabsContent value="schedule" className="p-0 m-0">
-                      <div className="max-h-[700px] overflow-y-auto p-6 space-y-8 bg-slate-50/50">
-                        {scheduleData.weeks.map((week, weekIndex) => (
-                          <div key={weekIndex} className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-                            <div className="bg-slate-800 text-white px-4 py-2 font-medium text-sm">
-                              {weekIndex + 1}. Hafta ({week[0].date.toLocaleDateString('tr-TR')} - {week[6].date.toLocaleDateString('tr-TR')})
-                            </div>
-                            <Table>
-                              <TableHeader className="bg-slate-50">
-                                <TableRow>
-                                  <TableHead className="w-[120px]">Tarih / Gün</TableHead>
-                                  <TableHead>Gündüz <span className="text-[10px] text-slate-400 block font-normal">(07:45-16:00)</span></TableHead>
-                                  <TableHead>Akşam <span className="text-[10px] text-slate-400 block font-normal">(16:00-00:00)</span></TableHead>
-                                  <TableHead>Gece <span className="text-[10px] text-slate-400 block font-normal">(00:00-08:00)</span></TableHead>
-                                  <TableHead className="bg-orange-50 text-orange-800">Pazar Mesaisi</TableHead>
-                                </TableRow>
-                              </TableHeader>
-                              <TableBody>
-                                {week.map((day, dayIndex) => {
-                                  const isSunday = day.date.getDay() === 0;
-                                  return (
-                                    <TableRow key={dayIndex} className={isSunday ? "bg-red-50/30" : ""}>
-                                      <TableCell className="font-medium">
-                                        {day.date.toLocaleDateString('tr-TR', { day: '2-digit', month: 'short' })}
-                                        <span className="block text-xs text-slate-400">
-                                          {day.date.toLocaleDateString('tr-TR', { weekday: 'long' })}
-                                        </span>
-                                      </TableCell>
-                                      <TableCell>{day.morning.map(e => e.name).join(" • ") || "-"}</TableCell>
-                                      <TableCell>{day.evening.map(e => e.name).join(" • ") || "-"}</TableCell>
-                                      <TableCell>{day.night.map(e => e.name).join(" • ") || "-"}</TableCell>
-                                      <TableCell className={isSunday ? "font-semibold text-orange-700 bg-orange-50/50" : "text-slate-300"}>
-                                        {isSunday ? (day.sundayOvertime.map(e => e.name).join(" • ") || "-") : "-"}
-                                      </TableCell>
-                                    </TableRow>
-                                  )
-                                })}
-                              </TableBody>
-                            </Table>
+                      <div className="space-y-8 bg-white p-4 rounded-xl border border-slate-200">
+                        
+                        {/* Table 1: Weeks 1-7 */}
+                        <div className="border border-[#757575] rounded-t-md overflow-hidden">
+                          <div className="bg-[#212121] text-white text-center py-2 font-bold text-sm">
+                            KW {scheduleData.weeks[0]?.weekNumber || 10} - KW {scheduleData.weeks[6]?.weekNumber || 16} VARDİYA LİSTESİ ({new Date().getFullYear()}-{new Date().getFullYear() + 1})
                           </div>
-                        ))}
+                          <div className="overflow-x-auto">
+                            <table className="w-full border-collapse bg-white text-sm">
+                              <thead>
+                                <tr>
+                                  <th className="w-[180px] border border-[#757575] bg-white p-2 text-left"></th>
+                                  {scheduleData.weeks.slice(0, 7).map((week, idx) => (
+                                    <th key={idx} className="border border-[#757575] bg-white p-2 font-normal text-[#E04545] min-w-[100px] text-left align-top">
+                                      KW{week.weekNumber}
+                                    </th>
+                                  ))}
+                                </tr>
+                              </thead>
+                              <tbody>
+                                <tr>
+                                  <td className="border border-[#757575] bg-[#F4F4F4] p-2 align-top">
+                                    <div className="text-[#E04545] font-bold">GÜNDÜZ</div>
+                                    <div className="text-xs text-[#E04545]">07:45 - 16:00</div>
+                                  </td>
+                                  {scheduleData.weeks.slice(0, 7).map((week, idx) => (
+                                    <td key={idx} className="border border-[#757575] p-2 align-top text-slate-800">
+                                      {week.morning.map(e => <div key={e.id}>{e.name.split(' ')[0]}</div>)}
+                                    </td>
+                                  ))}
+                                </tr>
+                                <tr>
+                                  <td className="border border-[#757575] bg-[#F4F4F4] p-2 align-top">
+                                    <div className="text-[#E04545] font-bold">AKŞAM</div>
+                                    <div className="text-xs text-[#E04545]">16:00 - 00:00</div>
+                                  </td>
+                                  {scheduleData.weeks.slice(0, 7).map((week, idx) => (
+                                    <td key={idx} className="border border-[#757575] p-2 align-top text-slate-800">
+                                      {week.evening.map(e => <div key={e.id}>{e.name.split(' ')[0]}</div>)}
+                                    </td>
+                                  ))}
+                                </tr>
+                                <tr className="bg-[#D9D9D9] h-8">
+                                  <td className="border border-[#757575]"></td>
+                                  {scheduleData.weeks.slice(0, 7).map((_, idx) => (
+                                    <td key={idx} className="border border-[#757575]"></td>
+                                  ))}
+                                </tr>
+                                <tr>
+                                  <td className="border border-[#757575] bg-[#F4F4F4] p-2 align-top">
+                                    <div className="text-[#E04545] font-bold">GECE(OLURSA)</div>
+                                    <div className="text-xs text-[#E04545]">00:00 - 08:00</div>
+                                  </td>
+                                  {scheduleData.weeks.slice(0, 7).map((week, idx) => (
+                                    <td key={idx} className="border border-[#757575] p-2 align-top text-slate-800">
+                                      {week.night.map(e => <div key={e.id}>{e.name.split(' ')[0]}</div>)}
+                                    </td>
+                                  ))}
+                                </tr>
+                                <tr className="bg-[#D9D9D9] h-8">
+                                  <td className="border border-[#757575]"></td>
+                                  {scheduleData.weeks.slice(0, 7).map((_, idx) => (
+                                    <td key={idx} className="border border-[#757575]"></td>
+                                  ))}
+                                </tr>
+                                <tr>
+                                  <td className="border border-[#757575] bg-[#F4F4F4] p-2 align-top">
+                                    <div className="text-[#E04545] font-bold">PAZAR</div>
+                                  </td>
+                                  {scheduleData.weeks.slice(0, 7).map((week, idx) => (
+                                    <td key={idx} className="border border-[#757575] p-2 align-top text-slate-800">
+                                      {week.sunday.map(e => <div key={e.id}>{e.name.split(' ')[0]}</div>)}
+                                    </td>
+                                  ))}
+                                </tr>
+                                <tr className="bg-[#D9D9D9] h-8">
+                                  <td className="border border-[#757575]"></td>
+                                  {scheduleData.weeks.slice(0, 7).map((_, idx) => (
+                                    <td key={idx} className="border border-[#757575]"></td>
+                                  ))}
+                                </tr>
+                                <tr>
+                                  <td className="border border-[#757575] bg-[#F4F4F4] p-2 align-top">
+                                    <div className="text-[#E04545] font-bold">CUMARTESİ MESAİ</div>
+                                  </td>
+                                  {scheduleData.weeks.slice(0, 7).map((week, idx) => (
+                                    <td key={idx} className="border border-[#757575] p-2 align-top text-slate-800">
+                                      {week.saturday.map(e => <div key={e.id}>{e.name.split(' ')[0]}</div>)}
+                                    </td>
+                                  ))}
+                                </tr>
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+
+                        {/* Table 2: Weeks 8-14 */}
+                        {scheduleData.weeks.length > 7 && (
+                          <div className="border border-[#757575] overflow-hidden">
+                            <div className="overflow-x-auto">
+                              <table className="w-full border-collapse bg-white text-sm">
+                                <thead>
+                                  <tr className="bg-[#D9D9D9] h-8">
+                                    <th className="w-[180px] border border-[#757575]"></th>
+                                    {scheduleData.weeks.slice(7, 14).map((_, idx) => (
+                                      <th key={idx} className="border border-[#757575] min-w-[100px]"></th>
+                                    ))}
+                                  </tr>
+                                  <tr>
+                                    <th className="w-[180px] border border-[#757575] bg-white p-2 text-left"></th>
+                                    {scheduleData.weeks.slice(7, 14).map((week, idx) => (
+                                      <th key={idx} className="border border-[#757575] bg-white p-2 font-normal text-[#E04545] min-w-[100px] text-left align-top">
+                                        KW{week.weekNumber}
+                                      </th>
+                                    ))}
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  <tr>
+                                    <td className="border border-[#757575] bg-[#F4F4F4] p-2 align-top">
+                                      <div className="text-[#E04545] font-bold">GÜNDÜZ</div>
+                                      <div className="text-xs text-[#E04545]">07:45 - 16:00</div>
+                                    </td>
+                                    {scheduleData.weeks.slice(7, 14).map((week, idx) => (
+                                      <td key={idx} className="border border-[#757575] p-2 align-top text-slate-800">
+                                        {week.morning.map(e => <div key={e.id}>{e.name.split(' ')[0]}</div>)}
+                                      </td>
+                                    ))}
+                                  </tr>
+                                  <tr>
+                                    <td className="border border-[#757575] bg-[#F4F4F4] p-2 align-top">
+                                      <div className="text-[#E04545] font-bold">AKŞAM</div>
+                                      <div className="text-xs text-[#E04545]">16:00 - 00:00</div>
+                                    </td>
+                                    {scheduleData.weeks.slice(7, 14).map((week, idx) => (
+                                      <td key={idx} className="border border-[#757575] p-2 align-top text-slate-800">
+                                        {week.evening.map(e => <div key={e.id}>{e.name.split(' ')[0]}</div>)}
+                                      </td>
+                                    ))}
+                                  </tr>
+                                  <tr className="bg-[#D9D9D9] h-8">
+                                    <td className="border border-[#757575]"></td>
+                                    {scheduleData.weeks.slice(7, 14).map((_, idx) => (
+                                      <td key={idx} className="border border-[#757575]"></td>
+                                    ))}
+                                  </tr>
+                                  <tr>
+                                    <td className="border border-[#757575] bg-[#F4F4F4] p-2 align-top">
+                                      <div className="text-[#E04545] font-bold">GECE(OLURSA)</div>
+                                      <div className="text-xs text-[#E04545]">00:00 - 08:00</div>
+                                    </td>
+                                    {scheduleData.weeks.slice(7, 14).map((week, idx) => (
+                                      <td key={idx} className="border border-[#757575] p-2 align-top text-slate-800">
+                                        {week.night.map(e => <div key={e.id}>{e.name.split(' ')[0]}</div>)}
+                                      </td>
+                                    ))}
+                                  </tr>
+                                  <tr className="bg-[#D9D9D9] h-8">
+                                    <td className="border border-[#757575]"></td>
+                                    {scheduleData.weeks.slice(7, 14).map((_, idx) => (
+                                      <td key={idx} className="border border-[#757575]"></td>
+                                    ))}
+                                  </tr>
+                                  <tr>
+                                    <td className="border border-[#757575] bg-[#F4F4F4] p-2 align-top">
+                                      <div className="text-[#E04545] font-bold">PAZAR</div>
+                                    </td>
+                                    {scheduleData.weeks.slice(7, 14).map((week, idx) => (
+                                      <td key={idx} className="border border-[#757575] p-2 align-top text-slate-800">
+                                        {week.sunday.map(e => <div key={e.id}>{e.name.split(' ')[0]}</div>)}
+                                      </td>
+                                    ))}
+                                  </tr>
+                                  <tr className="bg-[#D9D9D9] h-8">
+                                    <td className="border border-[#757575]"></td>
+                                    {scheduleData.weeks.slice(7, 14).map((_, idx) => (
+                                      <td key={idx} className="border border-[#757575]"></td>
+                                    ))}
+                                  </tr>
+                                  <tr>
+                                    <td className="border border-[#757575] bg-[#F4F4F4] p-2 align-top">
+                                      <div className="text-[#E04545] font-bold">CUMARTESİ MESAİ</div>
+                                    </td>
+                                    {scheduleData.weeks.slice(7, 14).map((week, idx) => (
+                                      <td key={idx} className="border border-[#757575] p-2 align-top text-slate-800">
+                                        {week.saturday.map(e => <div key={e.id}>{e.name.split(' ')[0]}</div>)}
+                                      </td>
+                                    ))}
+                                  </tr>
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        )}
+
                       </div>
                     </TabsContent>
 
@@ -287,6 +438,7 @@ export default function Home() {
                               <TableHead className="text-center">Akşam</TableHead>
                               <TableHead className="text-center">Gece</TableHead>
                               <TableHead className="text-center text-orange-600">Pazar Mesaisi</TableHead>
+                              <TableHead className="text-center text-orange-600">Cumartesi Mesaisi</TableHead>
                               <TableHead className="text-right font-bold">Toplam</TableHead>
                             </TableRow>
                           </TableHeader>
@@ -304,6 +456,7 @@ export default function Home() {
                                   <TableCell className="text-center text-slate-600">{s.evening}</TableCell>
                                   <TableCell className="text-center text-slate-600">{s.night}</TableCell>
                                   <TableCell className="text-center text-orange-600 font-medium">{s.sundayOvertime}</TableCell>
+                                  <TableCell className="text-center text-orange-600 font-medium">{s.saturdayOvertime}</TableCell>
                                   <TableCell className="text-right font-bold text-primary text-lg">{s.total}</TableCell>
                                 </TableRow>
                               )
